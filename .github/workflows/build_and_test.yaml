@@ -89,19 +89,14 @@ jobs:
         run: |
           ./gradlew --no-daemon javadoc findbugsMain checkstyleMain checkstyleTest checkstyleJmh
 
-      - name: Docker diagnostics
-        run: |
-          docker version
-          docker info
-          docker ps
-          ls -l /var/run/docker.sock
   run_tests:
     timeout-minutes: 120
     env:
       GOBBLIN_GRADLE_OPTS: "--no-daemon -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true"
       # GitHub-hosted runner images can ship very new Docker daemons. Older Testcontainers/docker-java stacks may fail
       # to negotiate a "valid Docker environment" unless we pin the client API to a backward-compatible version.
-#      DOCKER_API_VERSION: "1.41"
+      # Note: keep this >= daemon minimum API version (currently 1.44 on ubuntu-latest).
+      DOCKER_API_VERSION: "1.44"
     strategy:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]
