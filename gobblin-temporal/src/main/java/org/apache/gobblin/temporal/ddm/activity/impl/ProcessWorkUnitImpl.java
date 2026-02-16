@@ -102,6 +102,7 @@ public class ProcessWorkUnitImpl implements ProcessWorkUnit {
   protected List<WorkUnit> loadFlattenedWorkUnits(WorkUnitClaimCheck wu, FileSystem fs) throws IOException {
     Path wuPath = new Path(wu.getWorkUnitPath());
     WorkUnit workUnit = JobLauncherUtils.createEmptyWorkUnitPerExtension(wuPath);
+
     Help.deserializeStateWithRetries(fs, wuPath, workUnit, wu);
     return JobLauncherUtils.flattenWorkUnits(Lists.newArrayList(workUnit));
   }
