@@ -98,7 +98,7 @@ jobs:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build
     services:
       mysql:
