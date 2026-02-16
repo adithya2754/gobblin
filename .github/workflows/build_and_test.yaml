@@ -97,6 +97,11 @@ jobs:
       # to negotiate a "valid Docker environment" unless we pin the client API to a backward-compatible version.
       # Note: keep this >= daemon minimum API version (currently 1.44 on ubuntu-latest).
       DOCKER_API_VERSION: "1.44"
+      # Be explicit about Docker endpoint/socket for docker-java/Testcontainers.
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "/var/run/docker.sock"
+      # Ryuk can be flaky/blocked in some CI environments; disabling reduces moving parts.
+      TESTCONTAINERS_RYUK_DISABLED: "true"
     strategy:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]
@@ -152,10 +157,14 @@ jobs:
       - name: Docker diagnostics (for Testcontainers)
         run: |
           set -euxo pipefail
+          id
+          groups
+          env | sort | grep -E '^(DOCKER|TESTCONTAINERS)_' || true
           docker version
           docker info
           docker ps
           ls -l /var/run/docker.sock || true
+          docker run --rm hello-world || true
       - name: Run test group ${{ matrix.test-group }}
         # Write retry logic as integration tests can fail due to timing out or network problems
         run: |
