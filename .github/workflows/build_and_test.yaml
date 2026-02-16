@@ -93,15 +93,7 @@ jobs:
     timeout-minutes: 120
     env:
       GOBBLIN_GRADLE_OPTS: "--no-daemon -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true"
-      # GitHub-hosted runner images can ship very new Docker daemons. Older Testcontainers/docker-java stacks may fail
-      # to negotiate a "valid Docker environment" unless we pin the client API to a backward-compatible version.
-      # Note: keep this >= daemon minimum API version (currently 1.44 on ubuntu-latest).
-      DOCKER_API_VERSION: "1.44"
-      # Be explicit about Docker endpoint/socket for docker-java/Testcontainers.
-      DOCKER_HOST: "unix:///var/run/docker.sock"
-      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "/var/run/docker.sock"
-      # Ryuk can be flaky/blocked in some CI environments; disabling reduces moving parts.
-      TESTCONTAINERS_RYUK_DISABLED: "true"
+      DOCKER_API_VERSION: "1.48"
     strategy:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]
