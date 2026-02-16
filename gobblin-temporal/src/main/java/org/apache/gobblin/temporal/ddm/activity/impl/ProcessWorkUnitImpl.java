@@ -95,7 +95,7 @@ public class ProcessWorkUnitImpl implements ProcessWorkUnit {
       throw new RuntimeException(e);
     } finally {
       Help.finalizeTroubleshooting(troubleshooter, eventSubmitter, log, correlator);
-      ExecutorsUtils.shutdownExecutorService(heartBeatExecutor, com.google.common.base.Optional.of(log));
+       ExecutorsUtils.shutdownExecutorService(heartBeatExecutor, com.google.common.base.Optional.of(log));
     }
   }
 

@@ -1,0 +1,32 @@
+namespace org.apache.gobblin.service
+
+/**
+ * Statistics from a job execution
+ */
+record JobStatistics {
+
+  /**
+   * Epoch time of when the execution began
+   */
+  executionStartTime: long
+
+  /**
+   * Epoch time of when the execution ended
+   */
+  executionEndTime: long
+
+  /**
+   * number of records processed in the last job execution
+   */
+  processedCount: long
+
+  /**
+   * job progress as a percentage (0-100)
+   */
+  jobProgress: int
+
+  /**
+   * estimate of time left until job completion
+   */
+  estimatedSecondsToCompletion: long
+}
