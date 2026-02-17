@@ -92,7 +92,11 @@ jobs:
   run_tests:
     timeout-minutes: 120
     env:
-      GOBBLIN_GRADLE_OPTS: "--no-daemon -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true"
+      GOBBLIN_GRADLE_OPTS: "--no-daemon -PprintTestOutput -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true -Dorg.testcontainers.dockerclient.provider=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -Dorg.slf4j.simpleLogger.log.org.testcontainers=trace -Dorg.slf4j.simpleLogger.log.com.github.dockerjava=debug"
+      DOCKER_API_VERSION: "1.48"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "/var/run/docker.sock"
+      TESTCONTAINERS_RYUK_DISABLED: "true"
     strategy:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]
@@ -145,6 +149,25 @@ jobs:
           # Only rebuild cache if build.gradle is changed
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
+      - name: Docker diagnostics (for Testcontainers)
+        run: |
+          set -euxo pipefail
+          id
+          groups
+          env | sort | grep -E '^(DOCKER|TESTCONTAINERS)_' || true
+          docker version
+          docker info
+          docker ps
+          ls -l /var/run/docker.sock || true
+          docker run --rm hello-world || true
+      - name: Testcontainers Debug
+        run: |
+          set -euxo pipefail
+          ./gradlew --stop || true
+          echo "DOCKER_HOST=$DOCKER_HOST"
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          ./gradlew --version
       - name: Run test group ${{ matrix.test-group }}
         # Write retry logic as integration tests can fail due to timing out or network problems
         run: |

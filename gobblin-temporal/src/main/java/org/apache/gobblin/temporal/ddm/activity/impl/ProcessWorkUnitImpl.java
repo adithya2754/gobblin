@@ -95,13 +95,14 @@ public class ProcessWorkUnitImpl implements ProcessWorkUnit {
       throw new RuntimeException(e);
     } finally {
       Help.finalizeTroubleshooting(troubleshooter, eventSubmitter, log, correlator);
-      ExecutorsUtils.shutdownExecutorService(heartBeatExecutor, com.google.common.base.Optional.of(log));
+       ExecutorsUtils.shutdownExecutorService(heartBeatExecutor, com.google.common.base.Optional.of(log));
     }
   }
 
   protected List<WorkUnit> loadFlattenedWorkUnits(WorkUnitClaimCheck wu, FileSystem fs) throws IOException {
     Path wuPath = new Path(wu.getWorkUnitPath());
     WorkUnit workUnit = JobLauncherUtils.createEmptyWorkUnitPerExtension(wuPath);
+
     Help.deserializeStateWithRetries(fs, wuPath, workUnit, wu);
     return JobLauncherUtils.flattenWorkUnits(Lists.newArrayList(workUnit));
   }
