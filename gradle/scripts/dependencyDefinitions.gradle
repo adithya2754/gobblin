@@ -223,7 +223,7 @@ ext.externalDependency = [
     ],
     "postgresConnector": "org.postgresql:postgresql:42.1.4",
     "tdigest": "com.tdunning:t-digest:3.3",
-    "testContainers": "org.testcontainers:testcontainers:1.20.4",
+    "testContainers": "org.testcontainers:testcontainers:1.17.",
     "testContainersMysql": "org.testcontainers:mysql:1.20.4",
     "xz": "org.tukaani:xz:1.8"
 ]
