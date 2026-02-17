@@ -37,4 +37,15 @@
     <level value="FATAL"/>
   </logger>
 
+  <!-- Testcontainers / docker-java debug (helps diagnose "Could not find a valid Docker environment") -->
+  <logger name="org.testcontainers">
+    <level value="DEBUG"/>
+  </logger>
+  <logger name="com.github.dockerjava">
+    <level value="DEBUG"/>
+  </logger>
+  <logger name="org.apache.gobblin.service.util.DockerEnvDiagnostics">
+    <level value="INFO"/>
+  </logger>
+
 </log4j:configuration>
