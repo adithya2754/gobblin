@@ -77,6 +77,7 @@ import org.apache.gobblin.service.monitoring.DagManagementDagActionStoreChangeMo
 import org.apache.gobblin.service.monitoring.FsJobStatusRetriever;
 import org.apache.gobblin.service.monitoring.GitConfigMonitor;
 import org.apache.gobblin.service.monitoring.SpecStoreChangeMonitor;
+import org.apache.gobblin.service.util.DockerEnvDiagnostics;
 import org.apache.gobblin.testing.AssertWithBackoff;
 import org.apache.gobblin.util.ConfigUtils;
 import org.apache.gobblin.util.PropertiesUtils;
@@ -141,6 +142,7 @@ public class GobblinServiceManagerTest {
     cleanUpDir(SERVICE_WORK_DIR);
     cleanUpDir(SPEC_STORE_PARENT_DIR);
 
+    DockerEnvDiagnostics.log(logger);
     mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion)
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("mysql")));
     mysql.start();

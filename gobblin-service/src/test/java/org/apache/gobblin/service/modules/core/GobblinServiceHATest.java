@@ -51,6 +51,7 @@ import org.apache.gobblin.service.Schedule;
 import org.apache.gobblin.service.ServiceConfigKeys;
 import org.apache.gobblin.service.TestServiceDatabaseConfig;
 import org.apache.gobblin.service.monitoring.FsJobStatusRetriever;
+import org.apache.gobblin.service.util.DockerEnvDiagnostics;
 
 
 @Test
@@ -123,6 +124,7 @@ public class GobblinServiceHATest {
 
     Properties commonServiceCoreProperties = new Properties();
 
+    DockerEnvDiagnostics.log(logger);
     mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion)
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("mysql")));
     mysql.start();

@@ -50,6 +50,7 @@ import org.apache.gobblin.service.ServiceConfigKeys;
 import org.apache.gobblin.service.TestServiceDatabaseConfig;
 import org.apache.gobblin.service.modules.db.ServiceDatabaseManager;
 import org.apache.gobblin.service.modules.db.ServiceDatabaseProviderImpl;
+import org.apache.gobblin.service.util.DockerEnvDiagnostics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,6 +70,7 @@ public class MySqlMultiContextIssueRepositoryTest {
 
   @BeforeClass
   public void classSetUp() {
+    DockerEnvDiagnostics.log(org.slf4j.LoggerFactory.getLogger(MySqlMultiContextIssueRepositoryTest.class));
     mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion)
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("mysql")));
     mysql.start();
