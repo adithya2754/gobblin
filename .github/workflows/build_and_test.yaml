@@ -88,18 +88,12 @@ jobs:
       - name: Run CheckStyle and FindBugs
         run: |
           ./gradlew --no-daemon javadoc findbugsMain checkstyleMain checkstyleTest checkstyleJmh
-      - name: Debug Docker env
-        run: |
-          which docker
-          docker version
-          docker info
-          echo DOCKER_HOST=$DOCKER_HOST
-          ls -l /var/run/docker.sock
-          id
+
   run_tests:
     timeout-minutes: 120
     env:
-      GOBBLIN_GRADLE_OPTS: "--no-daemon -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true"
+      GOBBLIN_GRADLE_OPTS: "--no-daemon -Dgobblin.metastore.testing.embeddedMysqlEnabled=false -PusePreinstalledMysql=true -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -Dorg.slf4j.simpleLogger.log.org.testcontainers=trace -Dorg.slf4j.simpleLogger.log.com.github.dockerjava=debug"
+      DOCKER_API_VERSION: "1.48"
     strategy:
       matrix:
         test-group: ["Core Tests", "Service Tests", "Module Tests", "Other Tests"]

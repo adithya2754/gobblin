@@ -31,7 +31,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -67,7 +69,8 @@ public class MySqlMultiContextIssueRepositoryTest {
 
   @BeforeClass
   public void classSetUp() {
-    mysql = new MySQLContainer("mysql:" + TestServiceDatabaseConfig.MysqlVersion);
+    mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("mysql")));
     mysql.start();
 
     ServiceDatabaseProviderImpl.Configuration dbConfig =

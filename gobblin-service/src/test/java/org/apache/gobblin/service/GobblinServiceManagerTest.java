@@ -38,6 +38,7 @@ import org.eclipse.jgit.util.FS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -140,7 +141,8 @@ public class GobblinServiceManagerTest {
     cleanUpDir(SERVICE_WORK_DIR);
     cleanUpDir(SPEC_STORE_PARENT_DIR);
 
-    mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion);
+    mysql = new MySQLContainer<>("mysql:" + TestServiceDatabaseConfig.MysqlVersion)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("mysql")));
     mysql.start();
     testMetastoreDatabase = TestMetastoreDatabaseFactory.get();
     testingServer = new TestingServer(true);
