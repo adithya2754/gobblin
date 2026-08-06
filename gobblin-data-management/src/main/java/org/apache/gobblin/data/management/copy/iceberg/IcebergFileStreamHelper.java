@@ -135,17 +135,24 @@ public class IcebergFileStreamHelper implements TimestampAwareFileBasedHelper {
 
   @Override
   public void close() throws IOException {
-    if (fileSystem != null) {
-      try {
-        fileSystem.close();
-        log.info("Closed Iceberg file stream helper and FileSystem connection");
-      } catch (IOException e) {
-        log.warn("Error closing FileSystem connection", e);
-        throw e;
-      }
-    } else {
-      log.debug("Closing Iceberg file stream helper - no FileSystem to close");
-    }
+    // NOTE: Intentionally do NOT close `fileSystem` here.
+    //
+    // `connect()` obtains the FileSystem via `FileSystem.get(configuration)`, which returns a JVM-wide
+    // *cached, shared* instance (keyed by scheme/authority/UGI). Multiple ProcessWorkUnit activities run
+    // concurrently within a single execution-worker JVM, and each IcebergFileStreamExtractor creates its
+    // own helper that resolves to the SAME cached FileSystem. Closing it from one finishing work unit
+    // tears down the shared client for every other work unit still using it, which surfaces as
+    // "java.io.IOException: Filesystem closed" (DFSClient.checkOpen) while sibling tasks open or close
+    // their source streams. The probability of hitting this race grows with the number of concurrent
+    // work units, so it is most visible on large, high-volume copy jobs.
+    //
+    // The FileSystem is borrowed, not owned: its lifecycle is managed by Hadoop's FileSystem cache and
+    // released at JVM shutdown. This mirrors the regular distcp extractor
+    // (FileAwareInputStreamExtractor#close is a no-op), which has run safely at high volume. If a helper
+    // ever needs to deterministically close its FileSystem, it must first obtain a private, unshared
+    // instance (e.g. via FileSystem.newInstance(...) or with caching disabled for that scheme) so that
+    // closing it cannot affect other concurrently-executing work units.
+    log.debug("Closing Iceberg file stream helper; leaving the shared (cached) FileSystem open for other work units");
   }
 
 }

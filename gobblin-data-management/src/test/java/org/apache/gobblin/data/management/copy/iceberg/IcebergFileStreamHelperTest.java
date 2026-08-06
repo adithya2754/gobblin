@@ -19,10 +19,12 @@ package org.apache.gobblin.data.management.copy.iceberg;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -240,15 +242,79 @@ public class IcebergFileStreamHelperTest {
     Assert.assertNotNull(is);
     is.close();
 
+    // Capture the borrowed, cached FileSystem instance before closing the helper.
+    Path path = new Path(testFile1.getAbsolutePath());
+    FileSystem shared = helper.getFileSystemForPath(path);
+
     // Close helper
     helper.close();
 
-    // After close, operations should fail
+    // close() must NOT close/evict the underlying FileSystem: it is borrowed from Hadoop's shared,
+    // JVM-wide cache (obtained via FileSystem.get) and may still be in use by other concurrently-
+    // executing work units in the same JVM. FileSystem.close() ALWAYS removes the instance from
+    // Hadoop's cache, so if close() had torn it down, FileSystem.get(...) would now return a
+    // DIFFERENT instance. Same instance => the shared FileSystem was left open (the fix). This is the
+    // deterministic signal; a LocalFileSystem (used here) would otherwise keep serving reads even
+    // after close(), unlike HDFS which throws "Filesystem closed".
+    Assert.assertSame(FileSystem.get(shared.getUri(), shared.getConf()), shared,
+      "close() must leave the borrowed FileSystem in Hadoop's cache (not close/evict it)");
+
+    // It must therefore still be functionally usable.
+    InputStream afterClose = helper.getFileStream(testFile1.getAbsolutePath());
+    Assert.assertNotNull(afterClose,
+      "FileSystem must remain usable after close() since it is a borrowed, cached instance");
+    afterClose.close();
+  }
+
+  /**
+   * Closing one helper must NOT close the cached {@link org.apache.hadoop.fs.FileSystem} that another
+   * concurrently-active helper is still using. Before the fix, {@link IcebergFileStreamHelper#close()}
+   * closed the shared instance, breaking sibling work units with "java.io.IOException: Filesystem closed".
+   */
+  @Test
+  public void testCloseDoesNotCloseSharedFileSystemUsedByAnotherHelper() throws Exception {
+    Properties props = new Properties();
+    props.setProperty(ConfigurationKeys.SOURCE_FILEBASED_FILES_TO_PULL, testFile1.getAbsolutePath());
+    // Force the default FileSystem to the (cached) local FS so both helpers deterministically share it.
+    props.setProperty("fs.defaultFS", "file:///");
+    props.setProperty("fs.file.impl.disable.cache", "false");
+    State sharedFsState = new State(props);
+
+    IcebergFileStreamHelper helper1 = new IcebergFileStreamHelper(sharedFsState);
+    IcebergFileStreamHelper helper2 = new IcebergFileStreamHelper(sharedFsState);
+    helper1.connect();
+    helper2.connect();
+
+    Path path = new Path(testFile1.getAbsolutePath());
+    // Precondition: both helpers resolve to the exact same JVM-cached FileSystem instance.
+    Assert.assertSame(helper2.getFileSystemForPath(path), helper1.getFileSystemForPath(path),
+      "Both helpers should resolve to the same JVM-cached FileSystem instance");
+
+    FileSystem shared = helper2.getFileSystemForPath(path);
+
+    // helper1 finishes its work unit and closes.
+    helper1.close();
+
+    // The fix's contract: close() must NOT close/evict the shared cached FileSystem. FileSystem.close()
+    // ALWAYS removes the instance from Hadoop's cache, so if helper1.close() had torn it down,
+    // FileSystem.get(...) would now return a DIFFERENT instance than the one helper2 still holds. This
+    // is the deterministic signal of the bug that surfaces at runtime as "Filesystem closed" on HDFS
+    // (the LocalFileSystem used here would otherwise keep serving reads even after close()).
+    Assert.assertSame(FileSystem.get(shared.getUri(), shared.getConf()), shared,
+      "helper1.close() must leave the shared FileSystem in Hadoop's cache for helper2");
+
+    // helper2 must still be able to open and read a source stream from the shared FileSystem;
+    // before the fix this threw "Filesystem closed".
+    InputStream is = helper2.getFileStream(testFile1.getAbsolutePath());
     try {
-      helper.getFileStream(testFile1.getAbsolutePath());
-    } catch (Exception e) {
-      Assert.assertTrue(e instanceof FileBasedHelperException || e instanceof IOException,
-        "Should throw appropriate exception after close");
+      Assert.assertNotNull(is, "helper2 must still open the source file after helper1 closed");
+      byte[] buffer = new byte[1024];
+      int bytesRead = is.read(buffer);
+      Assert.assertEquals(new String(buffer, 0, bytesRead), "Test data for file 1",
+        "helper2 should read correct content after helper1 closed (shared FileSystem must stay open)");
+    } finally {
+      is.close();
+      helper2.close();
     }
   }
 
